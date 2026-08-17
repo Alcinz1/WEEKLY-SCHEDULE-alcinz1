@@ -90,6 +90,7 @@ button:hover{opacity:.88}
 }
 .class-chip.active{font-weight:800;border:2px solid #34495e}
 
+.teacher-print{display:none;text-align:center;margin:-3mm 0 5mm;font-size:16px;font-weight:700;color:#000}
 .target-box{
     max-width:1250px;
     margin:0 auto 14px;
@@ -184,6 +185,7 @@ td{
     @page{size:auto;margin:8mm}
     body{margin:0;padding:0;background:#fff!important;color:#000!important}
     .no-print{display:none!important}
+    .teacher-print{display:block!important;color:#000!important}
     .card,.target-box,.summary,.table-wrap{
         max-width:none!important;
         border:0!important;
@@ -225,6 +227,7 @@ td{
 <body>
 <div class="header">
     <h1>برنامج جدول الحصص الأسبوعي</h1>
+<div class="teacher-print"><span id="teacherPrint"></span></div>
     <p>برنامج مستقل لإدارة الجدول الأسبوعي للصفوف</p>
 </div>
 
@@ -245,6 +248,20 @@ td{
         <input id="newClassName" type="text" placeholder="اسم الصف والشعبة" onkeydown="if(event.key==='Enter') addClass()">
     </div>
     <div class="class-list" id="classList"></div>
+</div>
+
+<div class="card no-print" style="margin-bottom:14px;">
+    <div class="class-bar">
+        <label for="teacherTitle">الصفة:</label>
+        <select id="teacherTitle" onchange="saveTeacherSettings()">
+            <option value="المعلم">المعلم</option>
+            <option value="المدرس">المدرس</option>
+            <option value="المعلمة">المعلمة</option>
+            <option value="المدرسة">المدرسة</option>
+        </select>
+        <label for="teacherName">الاسم:</label>
+        <input id="teacherName" type="text" placeholder="اكتب الاسم" oninput="saveTeacherSettings()">
+    </div>
 </div>
 
 <div class="target-box no-print">
@@ -298,7 +315,9 @@ function newState(){
         currentClass:"",
         target:2,
         schedule:blankSchedule(),
-        theme:"light"
+        theme:"light",
+        teacherName:"",
+        teacherTitle:"المعلم"
     };
 }
 function loadState(){
@@ -313,6 +332,8 @@ function loadState(){
             return a;
         });
         if(!Number.isFinite(Number(x.target)))x.target=2;
+        if(typeof x.teacherName!=="string")x.teacherName="";
+        if(typeof x.teacherTitle!=="string" || !["المعلم","المدرس","المعلمة","المدرسة"].includes(x.teacherTitle)) x.teacherTitle="المعلم";
         return x;
     }catch(e){
         return newState();
@@ -326,9 +347,12 @@ function render(){
     renderSchedule();
     renderWarnings();
     document.getElementById("targetLessons").value=state.target;
+    document.getElementById("teacherName").value=state.teacherName||"";
+    document.getElementById("teacherTitle").value=state.teacherTitle||"المعلم";
     document.body.classList.toggle("dark",state.theme==="dark");
     document.getElementById("themeBtn").textContent =
         state.theme==="dark" ? "☀️ الوضع النهاري" : "🌙 الوضع الليلي";
+    updateTeacherPrint();
 }
 function renderClasses(){
     const select=document.getElementById("classSelect");
@@ -398,6 +422,12 @@ function changeCurrentClass(){
     state.currentClass=document.getElementById("classSelect").value;
     persist();
     render();
+}
+function saveTeacherSettings(){
+    state.teacherName=document.getElementById("teacherName").value||"";
+    state.teacherTitle=document.getElementById("teacherTitle").value||"المعلم";
+    persist();
+    updateTeacherPrint();
 }
 function saveTarget(v){
     const n=parseInt(v,10);
@@ -491,6 +521,14 @@ function renderWarnings(){
     });
 
     if(warnings.children.length)warnings.style.display="block";
+}
+function updateTeacherPrint(){
+    const el=document.getElementById("teacherPrint");
+    if(el){
+        const title=state.teacherTitle||"المعلم";
+        const name=state.teacherName||"";
+        el.textContent=name ? (title+" "+name) : "";
+    }
 }
 function toggleTheme(){
     state.theme=state.theme==="dark"?"light":"dark";
