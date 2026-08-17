@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>برنامج جدول الحصص الأسبوعي</title>
+<meta name="theme-color" content="#34495e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="جدول الحصص الأسبوعي">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+
+<style>
+:root{
+    --bg:#f4f7f6;
+    --surface:#fff;
+    --soft:#e8f4f8;
+    --text:#243447;
+    --border:#222;
+    --muted:#6b7280;
+}
+*{box-sizing:border-box}
+body{
+    margin:0;
+    padding:18px;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+}
+body.dark{
+    --bg:#151a1f;
+    --surface:#20262d;
+    --soft:#26343d;
+    --text:#ecf0f1;
+    --border:#7d8790;
+    --muted:#b4bdc7;
+}
+.header{text-align:center;margin-bottom:15px}
+.header h1{margin:0 0 5px;font-size:28px}
+.header p{margin:0;color:var(--muted)}
+
+.toolbar{
+    display:flex;justify-content:center;gap:8px;flex-wrap:wrap;
+    margin:12px 0;
+}
+button{
+    border:0;border-radius:6px;padding:10px 16px;
+    color:#fff;background:#34495e;cursor:pointer;
+    font-family:inherit;font-weight:700;
+}
+button:hover{opacity:.88}
+.btn-green{background:#16a085}
+.btn-blue{background:#2980b9}
+.btn-red{background:#c0392b}
+.btn-gray{background:#7f8c8d}
+
+.card{
+    max-width:1250px;
+    margin:0 auto 14px;
+    background:var(--surface);
+    border:1px solid #bbb;
+    border-radius:10px;
+    padding:14px;
+    box-shadow:0 3px 10px rgba(0,0,0,.08);
+}
+.class-bar{
+    display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;
+}
+.class-bar label{font-weight:800}
+.class-bar input,
+.class-bar select,
+.target-box input{
+    font-family:inherit;
+    font-size:16px;
+    padding:8px 10px;
+    border:1px solid #aaa;
+    border-radius:5px;
+    background:var(--surface);
+    color:var(--text);
+}
+.class-bar input{min-width:220px;text-align:center}
+.class-list{
+    display:flex;gap:6px;flex-wrap:wrap;justify-content:center;
+    margin-top:10px;
+}
+.class-chip{
+    padding:5px 10px;border-radius:14px;background:var(--soft);
+    color:var(--text);cursor:pointer;border:1px solid #b8c7cf;
+    font-size:13px;
+}
+.class-chip.active{font-weight:800;border:2px solid #34495e}
+
+.target-box{
+    max-width:1250px;
+    margin:0 auto 14px;
+    text-align:center;
+    background:var(--surface);
+    border:1px solid #bbb;
+    border-radius:10px;
+    padding:12px;
+}
+.target-box strong{font-size:18px}
+.target-box input{width:80px;text-align:center;font-weight:800;margin:0 6px}
+.target-note{margin-top:6px;color:var(--muted);font-size:14px}
+
+.table-wrap{
+    max-width:1250px;
+    margin:0 auto;
+    overflow-x:auto;
+    background:var(--surface);
+    border-radius:10px;
+    box-shadow:0 3px 12px rgba(0,0,0,.1);
+}
+table{
+    width:100%;
+    min-width:980px;
+    border:2px solid var(--border);
+    border-collapse:collapse;
+    border-spacing:0;
+    table-layout:fixed;
+    background:var(--surface);
+}
+th,td{
+    border:1px solid var(--border);
+    text-align:center;
+    padding:5px;
+    color:var(--text);
+}
+th{
+    background:#34495e;
+    color:#fff;
+    font-size:14px;
+}
+td{
+    height:58px;
+    font-size:14px;
+}
+.day-cell{
+    width:110px;
+    background:var(--soft);
+    font-weight:800;
+}
+.schedule-select{
+    width:100%;
+    height:40px;
+    border:1px solid #9aa3aa;
+    border-radius:4px;
+    background:var(--surface);
+    color:var(--text);
+    font-family:inherit;
+    font-size:14px;
+    padding:3px;
+}
+.schedule-select option[value="__BUSY__"]{color:#c0392b}
+.summary{
+    max-width:1250px;
+    margin:14px auto 0;
+    background:var(--surface);
+    border:2px solid #222;
+    border-radius:10px;
+    padding:14px;
+}
+.summary h2{text-align:center;margin:0 0 10px;font-size:20px}
+.warning{
+    display:none;
+    border:1px solid #c0392b;
+    background:#ffe8e8;
+    color:#c0392b;
+    border-radius:8px;
+    padding:10px;
+    font-weight:800;
+}
+.warning div{padding:4px 0}
+.empty-note{text-align:center;color:var(--muted);padding:8px}
+.footer{
+    text-align:center;
+    margin-top:14px;
+    color:var(--muted);
+    font-size:12px;
+}
+
+/* شاشة الطباعة: نفس البرنامج يطبع الجدول فقط، والاتجاه يتركه للمتصفح. */
+@media print{
+    @page{size:auto;margin:8mm}
+    body{margin:0;padding:0;background:#fff!important;color:#000!important}
+    .no-print{display:none!important}
+    .card,.target-box,.summary,.table-wrap{
+        max-width:none!important;
+        border:0!important;
+        box-shadow:none!important;
+        border-radius:0!important;
+        padding:0!important;
+        margin:0!important;
+        background:#fff!important;
+    }
+    .table-wrap{overflow:visible!important}
+    table{
+        width:100%!important;
+        min-width:0!important;
+        border:2px solid #000!important;
+        border-collapse:collapse!important;
+    }
+    th,td{
+        border:1px solid #000!important;
+        color:#000!important;
+    }
+    th{background:#eee!important}
+    .schedule-select{
+        appearance:none!important;
+        -webkit-appearance:none!important;
+        border:0!important;
+        background:transparent!important;
+        color:#000!important;
+        font-size:12px!important;
+    }
+    .summary{
+        border:1px solid #000!important;
+        margin-top:6mm!important;
+    }
+    .warning{color:#000!important;background:#fff!important;border:1px solid #000!important}
+}
+</style>
+</head>
+
+<body>
+<div class="header">
+    <h1>برنامج جدول الحصص الأسبوعي</h1>
+    <p>برنامج مستقل لإدارة الجدول الأسبوعي للصفوف</p>
+</div>
+
+<div class="toolbar no-print">
+    <button class="btn-blue" onclick="addClass()">+ إضافة صف</button>
+    <button class="btn-red" onclick="deleteCurrentClass()">حذف الصف</button>
+    <button class="btn-green" onclick="saveBackup()">💾 حفظ نسخة احتياطية</button>
+    <button onclick="document.getElementById('backupFile').click()">📂 استعادة</button>
+    <button onclick="window.print()">🖨️ طباعة الجدول</button>
+    <button class="btn-gray" onclick="toggleTheme()" id="themeBtn">🌙 الوضع الليلي</button>
+    <input id="backupFile" type="file" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)">
+</div>
+
+<div class="card no-print">
+    <div class="class-bar">
+        <label for="classSelect">الصف الحالي:</label>
+        <select id="classSelect" onchange="changeCurrentClass()"></select>
+        <input id="newClassName" type="text" placeholder="اسم الصف والشعبة" onkeydown="if(event.key==='Enter') addClass()">
+    </div>
+    <div class="class-list" id="classList"></div>
+</div>
+
+<div class="target-box no-print">
+    <strong>العدد المطلوب لكل صف:</strong>
+    <input id="targetLessons" type="number" min="0" max="20" value="2" onchange="saveTarget(this.value)">
+    <span>درس في الأسبوع</span>
+    <div class="target-note">هذا العدد عام على جميع الصفوف. إذا كتبت 2 فالمطلوب درسان لكل صف.</div>
+</div>
+
+<div class="table-wrap">
+    <table id="scheduleTable">
+        <thead>
+            <tr>
+                <th class="day-cell">اليوم</th>
+                <th>الدرس 1</th>
+                <th>الدرس 2</th>
+                <th>الدرس 3</th>
+                <th>الدرس 4</th>
+                <th>الدرس 5</th>
+                <th>الدرس 6</th>
+                <th>الدرس 7</th>
+                <th>الدرس 8</th>
+            </tr>
+        </thead>
+        <tbody id="scheduleBody"></tbody>
+    </table>
+</div>
+
+<div class="summary">
+    <h2>عدد الحصص لكل صف في الأسبوع</h2>
+    <div id="warnings" class="warning"></div>
+    <div id="summaryEmpty" class="empty-note">لم يتم وضع أي صف في الجدول بعد.</div>
+</div>
+
+<div class="footer">برنامج جدول الحصص الأسبوعي</div>
+
+<script>
+const KEY="weekly_schedule_standalone_v1";
+
+const DAYS=["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+const LESSONS=8;
+
+let state=loadState();
+
+function blankSchedule(){
+    return DAYS.map(()=>Array(LESSONS).fill(""));
+}
+function newState(){
+    return {
+        classes:{},
+        currentClass:"",
+        target:2,
+        schedule:blankSchedule(),
+        theme:"light"
+    };
+}
+function loadState(){
+    try{
+        const x=JSON.parse(localStorage.getItem(KEY)||"null");
+        if(!x) return newState();
+        if(!x.classes||typeof x.classes!=="object")x.classes={};
+        if(!Array.isArray(x.schedule)||x.schedule.length!==7)x.schedule=blankSchedule();
+        x.schedule=x.schedule.map(r=>{
+            const a=Array.isArray(r)?r.slice(0,LESSONS):[];
+            while(a.length<LESSONS)a.push("");
+            return a;
+        });
+        if(!Number.isFinite(Number(x.target)))x.target=2;
+        return x;
+    }catch(e){
+        return newState();
+    }
+}
+function persist(){
+    localStorage.setItem(KEY,JSON.stringify(state));
+}
+function render(){
+    renderClasses();
+    renderSchedule();
+    renderWarnings();
+    document.getElementById("targetLessons").value=state.target;
+    document.body.classList.toggle("dark",state.theme==="dark");
+    document.getElementById("themeBtn").textContent =
+        state.theme==="dark" ? "☀️ الوضع النهاري" : "🌙 الوضع الليلي";
+}
+function renderClasses(){
+    const select=document.getElementById("classSelect");
+    const list=document.getElementById("classList");
+    select.innerHTML="";
+    list.innerHTML="";
+
+    const ids=Object.keys(state.classes);
+    if(!ids.length){
+        select.innerHTML='<option>لا توجد صفوف</option>';
+        return;
+    }
+
+    if(!state.currentClass || !state.classes[state.currentClass]){
+        state.currentClass=ids[0];
+    }
+
+    ids.forEach(id=>{
+        const opt=document.createElement("option");
+        opt.value=id;
+        opt.textContent=state.classes[id];
+        select.appendChild(opt);
+
+        const chip=document.createElement("span");
+        chip.className="class-chip"+(id===state.currentClass?" active":"");
+        chip.textContent=state.classes[id];
+        chip.onclick=()=>{
+            state.currentClass=id;
+            persist();
+            render();
+        };
+        list.appendChild(chip);
+    });
+
+    select.value=state.currentClass;
+}
+function addClass(){
+    const input=document.getElementById("newClassName");
+    const name=(input.value||"").trim() || prompt("اكتب اسم الصف والشعبة:");
+    if(!name)return;
+
+    let id="c_"+Date.now()+"_"+Math.random().toString(36).slice(2,7);
+    state.classes[id]=name.trim();
+    state.currentClass=id;
+    input.value="";
+    persist();
+    render();
+}
+function deleteCurrentClass(){
+    if(!state.currentClass || !state.classes[state.currentClass]){
+        alert("لا يوجد صف محدد.");
+        return;
+    }
+    const name=state.classes[state.currentClass];
+    if(!confirm('حذف الصف "'+name+'"؟'))return;
+
+    // إزالة الصف من كل خانات الجدول.
+    state.schedule=state.schedule.map(day=>day.map(cell=>cell===state.currentClass?"":cell));
+    delete state.classes[state.currentClass];
+
+    const ids=Object.keys(state.classes);
+    state.currentClass=ids[0]||"";
+    persist();
+    render();
+}
+function changeCurrentClass(){
+    state.currentClass=document.getElementById("classSelect").value;
+    persist();
+    render();
+}
+function saveTarget(v){
+    const n=parseInt(v,10);
+    state.target=Number.isFinite(n)&&n>=0?n:2;
+    persist();
+    renderWarnings();
+}
+function setCell(day,lesson,value){
+    state.schedule[day][lesson]=value;
+    persist();
+    renderWarnings();
+}
+function renderSchedule(){
+    const tbody=document.getElementById("scheduleBody");
+    tbody.innerHTML="";
+
+    DAYS.forEach((day,di)=>{
+        const tr=document.createElement("tr");
+        const dayTd=document.createElement("td");
+        dayTd.className="day-cell";
+        dayTd.textContent=day;
+        tr.appendChild(dayTd);
+
+        for(let li=0;li<LESSONS;li++){
+            const td=document.createElement("td");
+            const select=document.createElement("select");
+            select.className="schedule-select";
+
+            const empty=document.createElement("option");
+            empty.value="";
+            empty.textContent="— فارغ —";
+            select.appendChild(empty);
+
+            const busy=document.createElement("option");
+            busy.value="__BUSY__";
+            busy.textContent="شاغل";
+            select.appendChild(busy);
+
+            Object.keys(state.classes).forEach(id=>{
+                const opt=document.createElement("option");
+                opt.value=id;
+                opt.textContent=state.classes[id];
+                select.appendChild(opt);
+            });
+
+            select.value=state.schedule[di][li]||"";
+            select.onchange=()=>setCell(di,li,select.value);
+
+            td.appendChild(select);
+            tr.appendChild(td);
+        }
+        tbody.appendChild(tr);
+    });
+}
+function renderWarnings(){
+    const warnings=document.getElementById("warnings");
+    const empty=document.getElementById("summaryEmpty");
+    warnings.innerHTML="";
+    warnings.style.display="none";
+
+    const counts={};
+    Object.keys(state.classes).forEach(id=>counts[id]=0);
+
+    state.schedule.forEach(day=>day.forEach(cell=>{
+        if(cell && cell!=="__BUSY__" && counts[cell]!==undefined){
+            counts[cell]++;
+        }
+    }));
+
+    const used=Object.keys(counts).filter(id=>counts[id]>0);
+
+    if(!used.length){
+        empty.style.display="block";
+        return;
+    }
+    empty.style.display="none";
+
+    used.forEach(id=>{
+        const actual=counts[id];
+        const diff=actual-state.target;
+        if(diff===0)return;
+
+        const div=document.createElement("div");
+        if(diff>0){
+            div.textContent=state.classes[id]+" فيه زيادة بمقدار "+diff+" "+(diff===1?"درس":"دروس");
+        }else{
+            const n=Math.abs(diff);
+            div.textContent=state.classes[id]+" فيه نقص بمقدار "+n+" "+(n===1?"درس":"دروس");
+        }
+        warnings.appendChild(div);
+    });
+
+    if(warnings.children.length)warnings.style.display="block";
+}
+function toggleTheme(){
+    state.theme=state.theme==="dark"?"light":"dark";
+    persist();
+    render();
+}
+function saveBackup(){
+    persist();
+    const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download="جدول_الحصص_الأسبوعي_نسخة_احتياطية.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function restoreBackup(e){
+    const file=e.target.files&&e.target.files[0];
+    if(!file)return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+        try{
+            const x=JSON.parse(reader.result);
+            if(!x||typeof x!=="object"||typeof x.classes!=="object"||!Array.isArray(x.schedule)){
+                throw new Error();
+            }
+            state={...newState(),...x};
+            persist();
+            render();
+            alert("تمت استعادة الجدول.");
+        }catch(err){
+            alert("الملف غير صالح.");
+        }
+        e.target.value="";
+    };
+    reader.readAsText(file);
+}
+render();
+if("serviceWorker" in navigator){
+    window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
