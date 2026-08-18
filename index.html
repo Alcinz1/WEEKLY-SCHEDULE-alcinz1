@@ -173,6 +173,15 @@ td{
 }
 .warning div{padding:4px 0}
 .empty-note{text-align:center;color:var(--muted);padding:8px}
+ .program-credit{
+    max-width:1250px;
+    margin:14px auto 0;
+    text-align:center;
+    color:var(--muted);
+    font-size:14px;
+    font-weight:700;
+}
+.program-credit strong{color:var(--text)}
 .footer{
     text-align:center;
     margin-top:14px;
@@ -182,46 +191,58 @@ td{
 
 /* شاشة الطباعة: نفس البرنامج يطبع الجدول فقط، والاتجاه يتركه للمتصفح. */
 @media print{
-    @page{size:auto;margin:8mm}
-    body{margin:0;padding:0;background:#fff!important;color:#000!important}
+    @page{size:auto;margin:6mm}
+    html,body{margin:0!important;padding:0!important;background:#fff!important;color:#000!important}
     .no-print{display:none!important}
-    .teacher-print{display:block!important;color:#000!important}
-    .card,.target-box,.summary,.table-wrap{
-        max-width:none!important;
-        border:0!important;
-        box-shadow:none!important;
-        border-radius:0!important;
-        padding:0!important;
-        margin:0!important;
-        background:#fff!important;
+
+    .teacher-print{
+        display:block!important;color:#000!important;text-align:center!important;
+        font-size:15px!important;font-weight:700!important;margin:1mm 0 4mm!important;
     }
-    .table-wrap{overflow:visible!important}
-    table{
-        width:100%!important;
-        min-width:0!important;
-        border:2px solid #000!important;
-        border-collapse:collapse!important;
+
+    .table-wrap{
+        width:100%!important;max-width:none!important;margin:0!important;padding:0!important;
+        overflow:visible!important;background:#fff!important;border:2px solid #000!important;
+        border-radius:0!important;box-shadow:none!important;
     }
-    th,td{
-        border:1px solid #000!important;
-        color:#000!important;
+
+    #scheduleTable{
+        width:100%!important;min-width:0!important;max-width:none!important;margin:0!important;
+        border:2px solid #000!important;border-collapse:collapse!important;border-spacing:0!important;
+        table-layout:fixed!important;background:#fff!important;border-radius:0!important;
     }
-    th{background:#eee!important}
+
+    #scheduleTable th,#scheduleTable td{
+        border:1px solid #000!important;box-sizing:border-box!important;color:#000!important;
+        background:#fff!important;overflow:hidden!important;padding:4px!important;
+    }
+    #scheduleTable th{background:#eee!important;font-size:11px!important;font-weight:800!important}
+    #scheduleTable td{height:13mm!important;font-size:11px!important;vertical-align:middle!important}
+    #scheduleTable .day-cell{width:13%!important;background:#eee!important;font-weight:800!important}
+
     .schedule-select{
-        appearance:none!important;
-        -webkit-appearance:none!important;
-        border:0!important;
-        background:transparent!important;
-        color:#000!important;
-        font-size:12px!important;
+        width:100%!important;height:34px!important;border:0!important;outline:0!important;
+        background:#fff!important;color:#000!important;font-size:11px!important;
+        appearance:none!important;-webkit-appearance:none!important;text-align:center!important;
+        padding:0!important;
     }
+
     .summary{
-        border:1px solid #000!important;
-        margin-top:6mm!important;
+        width:100%!important;max-width:none!important;margin:5mm 0 0!important;padding:4mm!important;
+        border:2px solid #000!important;border-radius:0!important;background:#fff!important;
+        box-shadow:none!important;color:#000!important;page-break-inside:avoid!important;
     }
-    .warning{color:#000!important;background:#fff!important;border:1px solid #000!important}
-}
-</style>
+    .summary h2{color:#000!important;font-size:14px!important;margin:0 0 3mm!important}
+    .warning{color:#000!important;background:#fff!important;border:1px solid #000!important;border-radius:0!important}
+    .empty-note{color:#000!important}
+
+    .program-credit{
+        display:block!important;width:100%!important;max-width:none!important;
+        margin:4mm 0 0!important;padding-top:2mm!important;border-top:1px solid #000!important;
+        text-align:center!important;color:#000!important;font-size:9px!important;
+    }
+    .program-credit strong{color:#000!important}
+}</style>
 </head>
 
 <body>
@@ -247,7 +268,6 @@ td{
         <select id="classSelect" onchange="changeCurrentClass()"></select>
         <input id="newClassName" type="text" placeholder="اسم الصف والشعبة" onkeydown="if(event.key==='Enter') addClass()">
     </div>
-    <div class="class-list" id="classList"></div>
 </div>
 
 <div class="card no-print" style="margin-bottom:14px;">
@@ -296,6 +316,7 @@ td{
     <div id="summaryEmpty" class="empty-note">لم يتم وضع أي صف في الجدول بعد.</div>
 </div>
 
+<div class="program-credit" id="programCredit">تم صنع البرنامج بواسطة <strong>Alcinz1</strong></div>
 <div class="footer">برنامج جدول الحصص الأسبوعي</div>
 
 <script>
@@ -356,37 +377,21 @@ function render(){
 }
 function renderClasses(){
     const select=document.getElementById("classSelect");
-    const list=document.getElementById("classList");
     select.innerHTML="";
-    list.innerHTML="";
-
     const ids=Object.keys(state.classes);
     if(!ids.length){
-        select.innerHTML='<option>لا توجد صفوف</option>';
+        select.innerHTML='<option value="">لا توجد صفوف</option>';
         return;
     }
-
     if(!state.currentClass || !state.classes[state.currentClass]){
         state.currentClass=ids[0];
     }
-
     ids.forEach(id=>{
         const opt=document.createElement("option");
         opt.value=id;
         opt.textContent=state.classes[id];
         select.appendChild(opt);
-
-        const chip=document.createElement("span");
-        chip.className="class-chip"+(id===state.currentClass?" active":"");
-        chip.textContent=state.classes[id];
-        chip.onclick=()=>{
-            state.currentClass=id;
-            persist();
-            render();
-        };
-        list.appendChild(chip);
     });
-
     select.value=state.currentClass;
 }
 function addClass(){
